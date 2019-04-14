@@ -1,9 +1,12 @@
+* globals ending in 'tsv' need to be set to where those files are located
+* other globals are for convenience in keeping directories clean.
 global magtsv "../pcs/magdata-papersonly"
 global pcs "../pcs/"
 global pvtsv "../../patents/patentsview/tsv/"
 global pv "./"
 global mag "./"
 
+*** import PatentsView files and save them as Stata
 import delimited using $pvtsv/patent.tsv, clear varnames(1)
 keep number
 rename number patnum
@@ -41,6 +44,7 @@ gen patfirm = pctfirmassignees>0
 drop pctfirmassignees
 save patnumappyearfirmpat, replace
 
+*** import Microsoft Academic Graph (MAG) files and save as STata
 import delimited using $magtsv/paperyear.tsv, clear varnames(1)
 rename paperid magid
 rename paperyear year
@@ -55,6 +59,7 @@ save $mag/journalidname, replace
 import delimited using $pcs/pcs.tsv, clear varnames(1)
 save $mag/pcs, replace
 
+*** create the JCIF denominator: # of papers published in that journal during the previous 2 years
 use $mag/magyear, clear
 merge 1:1 magid using $mag/magjournalid, keep(3) nogen
 gen int npapers = 1
@@ -70,36 +75,36 @@ compress
 duplicates drop
 save magjafdenominator, replace
 
+*** create the JCIF numerator: # of citations from patents assigned to firms
 use $mag/pcs, clear
 rename patent patnum
+* keep only Marx/Fuegi matches with conf score 5 or higher
 drop if confscore<5
 drop reftype confscore
 fmerge m:1 patnum using $pv/patnumappyearfirmpat, keep(3) nogen
 keep if patfirm==1
+drop patfirm
 rename appyear  citingyear
 rename  paperid magid
 fmerge m:1 magid using $mag/magyear, keep(3) nogen
 rename year citedyear
 compress
-* keep the uncited papers in every journal
+* keep only the citations from the focal year
 drop if citingyear - citedyear>2
 drop if citingyear==citedyear
 drop if citingyear<citedyear
 fmerge m:1 magid using $mag/magjournalid, keep(3) nogen
-rename magid citedmagid
-drop citedmagid
+drop if missing(journalid)
+drop magid
+drop patnum
 * for each pair, which year could that citation contribute to
 * orif not cite, how many papers were ther ein two pervious years
-* collapse to get the totals
 * then do the division to get jaf
-* rehape at that point ? i htink yes.
 sort journalid citedyear citingyear
 gen int journalyearpaircite = 1
 replace journalyearpaircite = journalyearpaircite + journalyearpaircite[_n-1] if (journalid==journalid[_n-1] & citedyear==citedyear[_n-1] & citingyear==citingyear[_n-1])
 * keep the FINAL journal/citingyear/citedyear observation (with the totals)
 drop if (journalid==journalid[_n+1] & citedyear==citedyear[_n+1] & citingyear==citingyear[_n+1])
-* you could optimize by collapsing down to the journal-cited-citing year level, then changing the following logic to
-* create the variables and then just increment them
 sort journalid
 * 1947 is the first year of front-page patent citations
 forvalues i = 1947/2018 {
@@ -112,7 +117,7 @@ drop citingyear citedyear
 drop journalyearpaircite
 drop if journalid==journalid[_n+1]
 
-** get to here, then you'll need to build a list of papres per journal per year (well prior two years)
+** get to here, then you'll need to build a list of papers per journal per year (well prior two years)
 reshape long jafcite, i(journalid) j(year)
 compress
 merge 1:1 journalid year using magjafdenominator, keep(1 3) nogen
@@ -120,13 +125,15 @@ gen jaf = jafcite/jafdenominator
 gen jafnomiss = jaf
 replace jafnomiss = 0 if missing(jaf)
 save $mag/journalidyearjaf, replace
-use $mag/magyear, clear
-merge 1:1 magid using $mag/magjournalid, keep (1 3) nogen
-merge m:1 journalid year using $mag/journalidyearjaf, keep(1 3) nogen
-keep magid jaf
-replace jaf = 0 if missing(jaf)
-compress
-save $mag/magjaf, replace
+
+* uncomment this block if you want to attach each paper's journal's JCIF to it
+// use $mag/magyear, clear
+// merge 1:1 magid using $mag/magjournalid, keep (1 3) nogen
+// merge m:1 journalid year using $mag/journalidyearjaf, keep(1 3) nogen
+// keep magid jaf
+// replace jaf = 0 if missing(jaf)
+// compress
+// save $mag/magjaf, replace
 
 use $mag/journalidyearjaf, clear
 merge m:1 journalid using $mag/journalidname, nogen
@@ -135,6 +142,8 @@ compress
 // rename year journalyear
 drop jafcite  jafnomiss
 rename jafdenominator prior2yrsnumpapers
+drop if prior2yrs==0
+duplicates drop
 save $mag/magjaf, replace
 use $mag/magjaf, clear
 rename jaf jcif
