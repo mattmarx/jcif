@@ -13,6 +13,7 @@ import delimited using $pvtsv/application.tsv, clear varnames(1)
 keep patent_id date
 rename patent_id patnum
 gen appyear = regexs(1) if regexm(date, "^([0-9][0-9][0-9][0-9])")
+destring appyear, replace
 drop date
 merge 1:1 patnum using patnum, keep(3) nogen
 save patnumappyear, replace
