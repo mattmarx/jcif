@@ -1,3 +1,4 @@
+set more off
 * globals ending in 'tsv' need to be set to where those files are located
 * other globals are for convenience in keeping directories clean.
 global magtsv "../pcs/magdata-papersonly"
@@ -155,6 +156,8 @@ replace jcif3yr = (jcif + jcif[_n-1] + jcif[_n-2])/3 if consecutive==1
 drop consecutive
 compress
 order year jcif jcif3yr journalname
+sort journalname year prior2
+drop if journalname==journalname[_n-1] & year==year[_n-1]
 save $mag/magjcif, replace
 export delimited magjcif, replace
 
