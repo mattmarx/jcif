@@ -138,7 +138,7 @@ save $mag/journalidyearjaf, replace
 
 use $mag/journalidyearjaf, clear
 merge m:1 journalid using $mag/journalidname, nogen
-drop journalid
+// drop journalid
 compress
 // rename year journalyear
 drop jafcite  jafnomiss
