@@ -67,14 +67,14 @@ gen int npapers = 1
 drop magid
 fcollapse (sum) npapers, by(year journalid)
 sort journalid year
-gen jafdenominator = .
-replace jafdenominator = 0 if journalid[_n-1]!=journalid
-replace jafdenominator = npapers[_n-1] if journalid[_n-2]!=journalid & journalid[_n-1]==journalid
-replace jafdenominator = npapers[_n-1] + npapers[_n-2] if journalid==journalid[_n-1] & journalid==journalid[_n-2]
-keep journalid jafdenominator year
+gen jcifdenominator = .
+replace jcifdenominator = 0 if journalid[_n-1]!=journalid
+replace jcifdenominator = npapers[_n-1] if journalid[_n-2]!=journalid & journalid[_n-1]==journalid
+replace jcifdenominator = npapers[_n-1] + npapers[_n-2] if journalid==journalid[_n-1] & journalid==journalid[_n-2]
+keep journalid jcifdenominator year
 compress
 duplicates drop
-save magjafdenominator, replace
+save magjcifdenominator, replace
 
 *** create the JCIF numerator: # of citations from patents assigned to firms
 use $mag/pcs, clear
@@ -100,7 +100,7 @@ drop magid
 drop patnum
 * for each pair, which year could that citation contribute to
 * orif not cite, how many papers were ther ein two pervious years
-* then do the division to get jaf
+* then do the division to get jcif
 sort journalid citedyear citingyear
 gen int journalyearpaircite = 1
 replace journalyearpaircite = journalyearpaircite + journalyearpaircite[_n-1] if (journalid==journalid[_n-1] & citedyear==citedyear[_n-1] & citingyear==citingyear[_n-1])
@@ -110,44 +110,41 @@ sort journalid
 * 1947 is the first year of front-page patent citations
 forvalues i = 1947/2018 {
   di "adding year `i'"
-  gen int jafcite`i' = 0
-  replace jafcite`i' =  journalyearpaircite if ((citingyear==`i') & (citedyear==`i'-1 | citedyear==`i'-2))
-  replace jafcite`i' = jafcite`i' + jafcite`i'[_n-1] if journalid==journalid[_n-1]
+  gen int jcifcite`i' = 0
+  replace jcifcite`i' =  journalyearpaircite if ((citingyear==`i') & (citedyear==`i'-1 | citedyear==`i'-2))
+  replace jcifcite`i' = jcifcite`i' + jcifcite`i'[_n-1] if journalid==journalid[_n-1]
 }
 drop citingyear citedyear
 drop journalyearpaircite
 drop if journalid==journalid[_n+1]
 
 ** get to here, then you'll need to build a list of papers per journal per year (well prior two years)
-reshape long jafcite, i(journalid) j(year)
+reshape long jcifcite, i(journalid) j(year)
 compress
-merge 1:1 journalid year using magjafdenominator, keep(1 3) nogen
-gen jaf = jafcite/jafdenominator
-gen jafnomiss = jaf
-replace jafnomiss = 0 if missing(jaf)
-save $mag/journalidyearjaf, replace
+merge 1:1 journalid year using magjcifdenominator, keep(1 3) nogen
+gen jcif = jcifcite/jcifdenominator
+gen jcifnomiss = jcif
+replace jcifnomiss = 0 if missing(jcif)
+save $mag/journalidyearjcif, replace
 
 * uncomment this block if you want to attach each paper's journal's JCIF to it
 // use $mag/magyear, clear
 // merge 1:1 magid using $mag/magjournalid, keep (1 3) nogen
-// merge m:1 journalid year using $mag/journalidyearjaf, keep(1 3) nogen
-// keep magid jaf
-// replace jaf = 0 if missing(jaf)
+// merge m:1 journalid year using $mag/journalidyearjcif, keep(1 3) nogen
+// keep magid jcif
+// replace jcif = 0 if missing(jcif)
 // compress
-// save $mag/magjaf, replace
+// save $mag/magjcif, replace
 
-use $mag/journalidyearjaf, clear
+use $mag/journalidyearjcif, clear
 merge m:1 journalid using $mag/journalidname, nogen
 // drop journalid
 compress
 // rename year journalyear
-drop jafcite  jafnomiss
-rename jafdenominator prior2yrsnumpapers
+drop jcifcite  jcifnomiss
+rename jcifdenominator prior2yrsnumpapers
 drop if prior2yrs==0
 duplicates drop
-save $mag/magjaf, replace
-use $mag/magjaf, clear
-rename jaf jcif
 drop if missing(jcif)
 sort journalname year
 gen jcif3yr = .
