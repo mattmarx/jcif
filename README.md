@@ -15,11 +15,12 @@ Both the patent-to-paper citations themselves as well as MAG can be downloaded f
 
 ## Output file
 The file magjcif.tsv contains the calculations for each journal in each year when it had publications. Fields are:
-year
-journalname - this is the unaltered journal name from the Microsoft Academic Graph
-jcif - calculated as described above. 
-jcif3yr - because patent-to-paper citations are much more rare than paper-to-paper citations, in addition to the traditional JIF formula we all provide a 3-year rolling average for JCIF. Note that JCIF scores will generally be lower than JIF for this same reason. Also, the 3-year running average does not exist for the first two years that a journal has papers in MAG.
-prior2yrsnumpapers - this is the "denominator" of the JCIF calculation, i.e., the number of papers published in that journal during the prior two years. 
+* *year*
+* *journalname* - this is the unaltered journal name from the Microsoft Academic Graph
+* *journalid* - this is the unique journal ID from the Microsoft Academic Graph. Note that a very small number of journal IDs have the same journal name.
+* *jcif* - calculated as described above. 
+* *jcif3yr* - because patent-to-paper citations are much more rare than paper-to-paper citations, in addition to the traditional JIF formula we all provide a 3-year rolling average for JCIF. Note that JCIF scores will generally be lower than JIF for this same reason. Also, the 3-year running average does not exist for the first two years that a journal has papers in MAG.
+* *prior2yrsnumpapers* - this is the "denominator" of the JCIF calculation, i.e., the number of papers published in that journal during the prior two years. 
 
 ## Replication
 If you prefer, you can build the magjcif.tsv file yourself using the magjcif.do script. It is a Stata file tested on version 14.2 and with the following requirements:
