@@ -74,6 +74,7 @@ replace jcifdenominator = npapers[_n-1] + npapers[_n-2] if journalid==journalid[
 keep journalid jcifdenominator year
 compress
 duplicates drop
+drop if missing(journalid)
 save magjcifdenominator, replace
 
 *** create the JCIF numerator: # of citations from patents assigned to firms
@@ -122,7 +123,7 @@ drop if journalid==journalid[_n+1]
 reshape long jcifcite, i(journalid) j(year)
 compress
 merge 1:1 journalid year using magjcifdenominator, keep(2 3) nogen
-replace jcifcite if missing(jcifcite)
+replace jcifcite = 0 if missing(jcifcite)
 gen jcif = jcifcite/jcifdenominator
 gen jcifnomiss = jcif
 replace jcifnomiss = 0 if missing(jcif)
