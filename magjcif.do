@@ -121,7 +121,8 @@ drop if journalid==journalid[_n+1]
 ** get to here, then you'll need to build a list of papers per journal per year (well prior two years)
 reshape long jcifcite, i(journalid) j(year)
 compress
-merge 1:1 journalid year using magjcifdenominator, keep(1 3) nogen
+merge 1:1 journalid year using magjcifdenominator, keep(2 3) nogen
+replace jcifcite if missing(jcifcite)
 gen jcif = jcifcite/jcifdenominator
 gen jcifnomiss = jcif
 replace jcifnomiss = 0 if missing(jcif)
