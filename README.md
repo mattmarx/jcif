@@ -19,6 +19,7 @@ The output files jif.tsv and jcif.tsv contains the calculations for each journal
 * *journalname* - this is the unaltered journal name from the Microsoft Academic Graph
 * *journalid* - this is the unique journal ID from the Microsoft Academic Graph. Note that a very small number of journal IDs have the same journal name.
 * *jcif* - calculated as described above. 
+If you don't want to build these from scratch, you can download them from http://linksplit.io/reliance_on_science.
 
 ## Replication
 If you prefer, you can build the .tsv files yourself using the mag_jif_jcif.do script. It is a Stata file tested on version 14.2 and with the following requirements:
